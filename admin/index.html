@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Admin | HUMORA FOUNDATION</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="/assets/css/site.css?v=20261115">
+<link rel="stylesheet" href="/assets/css/admin.css?v=20261115">
+</head>
+<body class="admin">
+<div id="loginView" class="login-wrap hidden">
+  <div class="login-card card">
+    <img src="/assets/img/logo.svg" alt="HUMORA FOUNDATION" width="220" height="46">
+    <h1 id="loginTitle">Admin sign in</h1>
+    <form id="loginForm" class="form" novalidate>
+      <div class="field"><label for="lemail" id="lEmailLbl">Email</label><input id="lemail" name="email" type="email" autocomplete="username" required></div>
+      <div class="field" id="lpassField"><label for="lpass" id="lPassLbl">Password</label><input id="lpass" name="password" type="password" autocomplete="current-password" required></div>
+      <div id="loginMsg" role="alert"></div>
+      <button class="btn btn-green" type="submit" id="loginBtn">Sign in</button>
+      <button class="linkbtn" type="button" id="forgotBtn">Forgot password?</button>
+    </form>
+    <form id="newPassForm" class="form hidden" novalidate>
+      <div class="field"><label for="np1" id="np1Lbl">New password</label><input id="np1" type="password" autocomplete="new-password" minlength="10" required></div>
+      <div id="npMsg" role="alert"></div>
+      <button class="btn btn-green" type="submit" id="npBtn">Save new password</button>
+    </form>
+    <div class="lang-switch center-switch" role="group" aria-label="Language"><button type="button" data-lang="en">English</button><button type="button" data-lang="bn" lang="bn">বাংলা</button></div>
+  </div>
+</div>
+<div id="appView" class="admin-shell hidden">
+  <aside class="sidebar" id="sidebar">
+    <a class="side-brand" href="/" target="_blank" rel="noopener"><img src="/assets/img/logo-light.svg" alt="HUMORA FOUNDATION" width="190" height="40"></a>
+    <nav id="sideNav"></nav>
+  </aside>
+  <div class="main-col">
+    <header class="topbar">
+      <button class="menu-btn" id="sideToggle" type="button" aria-label="Menu"></button>
+      <h1 id="pageTitle"></h1>
+      <div class="top-right">
+        <div class="lang-switch" role="group" aria-label="Language"><button type="button" data-lang="en">EN</button><button type="button" data-lang="bn" lang="bn">বাংলা</button></div>
+        <span class="who" id="who"></span>
+        <button class="btn btn-sm btn-outline" id="logoutBtn" type="button"></button>
+      </div>
+    </header>
+    <main id="view" class="view" tabindex="-1"></main>
+  </div>
+</div>
+<div id="modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><div class="modal-box"><div class="modal-head"><h2 id="modalTitle"></h2><button type="button" class="icon-btn" id="modalClose" aria-label="Close"></button></div><div id="modalBody"></div></div></div>
+<div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+<script type="module" src="/assets/js/admin.js?v=20261115"></script>
+</body>
+</html>

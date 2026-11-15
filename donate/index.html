@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Make a donation | HUMORA FOUNDATION</title>
+<meta name="description" content="Every contribution — big or small — helps us feed a family, keep a child warm and support people in crisis.">
+
+<link rel="canonical" href="https://humora-foundation.vercel.app/donate/">
+<link rel="alternate" hreflang="en" href="https://humora-foundation.vercel.app/donate/">
+<link rel="alternate" hreflang="bn" href="https://humora-foundation.vercel.app/donate/?lang=bn">
+<link rel="alternate" hreflang="x-default" href="https://humora-foundation.vercel.app/donate/">
+<meta name="theme-color" content="#102B46">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="HUMORA FOUNDATION">
+<meta property="og:title" content="Make a donation | HUMORA FOUNDATION">
+<meta property="og:description" content="Every contribution — big or small — helps us feed a family, keep a child warm and support people in crisis.">
+<meta property="og:url" content="https://humora-foundation.vercel.app/donate/">
+<meta property="og:image" content="https://humora-foundation.vercel.app/assets/img/og-image.png">
+<meta property="og:locale" content="en_US">
+<meta property="og:locale:alternate" content="bn_BD">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Make a donation | HUMORA FOUNDATION">
+<meta name="twitter:description" content="Every contribution — big or small — helps us feed a family, keep a child warm and support people in crisis.">
+<meta name="twitter:image" content="https://humora-foundation.vercel.app/assets/img/og-image.png">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/assets/img/icon-192.png" sizes="192x192">
+<link rel="apple-touch-icon" href="/assets/img/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="/assets/css/site.css?v=20261115">
+
+</head>
+<body data-page="donate" data-title="donate.title" data-desc="c.donate.text">
+<a class="skip" href="#main" data-i18n="skip">Skip to main content</a>
+<header id="site-header" class="site-header"><div class="container nav"><a class="brand" href="/"><img src="/assets/img/logo.svg" alt="HUMORA FOUNDATION" width="210" height="44"></a></div></header>
+<main id="main">
+<section class="page-hero"><div class="container"><div class="crumbs"><a href="/" data-href="/" data-i18n="nav.home">Home</a> / <span data-i18n="donate.eyebrow">Donate</span></div><h1 data-i18n="c.donate.headline">Your Kindness Can Change a Life.</h1><p data-i18n="c.donate.text">Every contribution — big or small — helps us feed a family, keep a child warm and support people in crisis.</p></div></section>
+<section class="block"><div class="container donate-layout">
+  <div class="card" id="donateCard">
+    <form id="donateForm" class="form" novalidate>
+      <div class="alert info" data-i18n="donate.manual_note">Donations are currently collected by manual transfer. Submitting this form does not mean payment has been received — a donation is confirmed only after an administrator verifies it.</div>
+      <div class="step-title"><b>1</b><span data-i18n="donate.step1">Choose an amount</span></div>
+      <div class="seg" role="group" id="curSeg" aria-label="Currency">
+        <button type="button" data-cur="BDT" aria-pressed="true">BDT ৳</button><button type="button" data-cur="USD" aria-pressed="false">USD $</button></div>
+      <div class="amounts" id="amounts"></div>
+      <div class="field"><label for="amount"><span data-i18n="donate.custom">Custom amount</span></label><input id="amount" name="amount" type="number" inputmode="decimal" min="1" step="any" required></div>
+      <div class="step-title"><b>2</b><span data-i18n="donate.step2">Your details</span></div>
+      <div class="row">
+        <div class="field"><label for="dname"><span data-i18n="donate.name">Full name</span></label><input id="dname" name="name" autocomplete="name" maxlength="100" required></div>
+        <div class="field"><label for="demail"><span data-i18n="donate.email">Email address</span></label><input id="demail" name="email" type="email" autocomplete="email" maxlength="160" required></div>
+      </div>
+      <div class="field"><label for="dcountry"><span data-i18n="donate.country">Country</span></label><input id="dcountry" name="country" autocomplete="country-name" maxlength="60" list="countries" required>
+        <datalist id="countries"><option value="Bangladesh"><option value="India"><option value="Saudi Arabia"><option value="United Arab Emirates"><option value="Qatar"><option value="Kuwait"><option value="Oman"><option value="Malaysia"><option value="Singapore"><option value="Cambodia"><option value="United Kingdom"><option value="United States"><option value="Canada"><option value="Australia"><option value="Italy"><option value="Germany"><option value="Japan"></datalist></div>
+      <div class="field"><label for="dmsg"><span data-i18n="donate.message">Message (optional)</span></label><textarea id="dmsg" name="message" maxlength="1000"></textarea></div>
+      <div class="step-title"><b>3</b><span data-i18n="donate.step3">Payment</span></div>
+      <div id="methods" class="form"><div class="spinner"></div></div>
+      <div class="field"><label for="dref"><span data-i18n="donate.reference">Transaction reference (if you have already paid)</span></label><input id="dref" name="reference" maxlength="100" autocomplete="off"><div class="help" data-i18n="donate.reference.help">You can also add it later using your donation reference.</div></div>
+      <div class="hp" aria-hidden="true"><label for="dweb">Website</label><input id="dweb" name="website" tabindex="-1" autocomplete="off"></div>
+      <div id="donateMsg" role="alert" aria-live="assertive"></div>
+      <button class="btn btn-green" type="submit" id="donateBtn" data-icon="heart"><span data-i18n="donate.submit">Submit donation</span></button>
+    </form>
+    <div id="donateDone" class="hidden" tabindex="-1"></div>
+  </div>
+  <aside class="side-card">
+    <div class="card"><h3 data-i18n="donate.secure">Your personal information is kept private and is never published.</h3>
+      <ul class="trust"><li data-icon="shield"><span data-i18n="donate.manual_note">Donations are currently collected by manual transfer. Submitting this form does not mean payment has been received — a donation is confirmed only after an administrator verifies it.</span></li><li data-icon="lock"><span data-i18n="tr.note">Only verified donations, verified income and approved expenses are included. Donor identities are never published.</span></li></ul></div>
+    <div class="card mt"><h3 data-i18n="donate.addref.title">Already paid? Add your transaction reference</h3>
+      <form id="refForm" class="form" novalidate>
+        <div class="field"><label for="rref"><span data-i18n="donate.addref.ref">Donation reference (e.g. HF-1A2B3C4D)</span></label><input id="rref" name="ref" maxlength="20" required autocomplete="off"></div>
+        <div class="field"><label for="remail"><span data-i18n="donate.email">Email address</span></label><input id="remail" name="email" type="email" maxlength="160" required></div>
+        <div class="field"><label for="rtxn"><span data-i18n="donate.reference">Transaction reference (if you have already paid)</span></label><input id="rtxn" name="txn" maxlength="100" required autocomplete="off"></div>
+        <div id="refMsg" role="alert" aria-live="assertive"></div>
+        <button class="btn btn-navy" type="submit" id="refBtn"><span data-i18n="donate.addref.btn">Submit reference</span></button>
+      </form></div>
+  </aside>
+</div></section>
+</main>
+<footer id="site-footer" class="site-footer"></footer>
+<noscript><p class="container">HUMORA FOUNDATION – A Little Help, A Brighter Future.</p></noscript>
+<script type="module" src="/assets/js/main.js?v=20261115"></script>
+</body>
+</html>

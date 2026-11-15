@@ -1,0 +1,10 @@
+.env
+.env.*
+!.env.example
+node_modules/
+.vercel/
+.DS_Store
+tests/screenshots/
+tests/last_run.txt
+__pycache__/
+supabase/.temp/
