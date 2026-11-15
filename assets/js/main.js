@@ -1,36 +1,26 @@
 // Entry point for every public page: picks the page handler from <body data-page>.
 import {
   boot, db, t, L, lang, esc, safeUrl, fmtNum, fmtMoney, fmtDate, fmtMonth, href, richText, getSettings, friendlyError,
-  activityCard, emptyBox, fetchActivities, fetchImpact, impactCards, countUp, validate, waLink, observeReveal, stockPhoto
+  activityCard, emptyBox, fetchActivities, fetchImpact, impactCards, countUp, validate, waLink, observeReveal, loadSection
 } from './app.js';
 import { icon, CATEGORY_ICON } from './icons.js';
 
 const $ = (s, r = document) => r.querySelector(s);
-const CATS = ['food', 'clothing', 'children', 'medical', 'winter', 'education'];
 
 async function photoSettings() {
   const s = await getSettings();
-  const heroBox = $('#heroPhoto');
-  if (heroBox) {
-    const real = safeUrl(s.hero_image_url);
-    // A verified photo uploaded by the foundation wins; otherwise an illustrative, clearly labelled stock photo.
-    heroBox.innerHTML = real ? `<img src="${esc(real)}" alt="" fetchpriority="high">` : stockPhoto('hero', { ratio: 1.6, sizes: '100vw', eager: true });
-    heroBox.classList.remove('hidden');
-    heroBox.closest('.hero')?.classList.add('has-photo');
-  }
+  // The foundation's own (verified) photos replace the labelled illustrative ones.
+  const real = safeUrl(s.hero_image_url);
+  if (real && $('#heroPhoto')) $('#heroPhoto').innerHTML = `<figure class="photo"><img src="${esc(real)}" alt="" fetchpriority="high"></figure>`;
   const about = safeUrl(s.about_image_url);
-  document.querySelectorAll('#aboutVisual').forEach((v) => {
-    v.insertAdjacentHTML('afterbegin', about ? `<img class="photo-real" src="${esc(about)}" alt="" loading="lazy">`
-      : stockPhoto('about', { ratio: 1.25, sizes: '(max-width:860px) 100vw, 560px', cls: 'fill' }));
-    v.classList.add('has-photo');
-  });
+  if (about) document.querySelectorAll('#aboutVisual .photo').forEach((f) => { f.outerHTML = `<img class="photo-real" src="${esc(about)}" alt="" loading="lazy">`; });
 }
 
 /* ---------------------------------------------------------------- finance summary */
 async function financeSummary(target, { full } = {}) {
   const el = $(target); if (!el) return null;
   const { data, error } = await db.rpc('humora_public_finance');
-  if (error) { el.innerHTML = emptyBox(friendlyError(error), 'alert'); return null; }
+  if (error) throw error;
   if (!data?.enabled) { el.innerHTML = emptyBox(t('tr.disabled'), 'shield'); return data; }
   const totals = (data.totals || []).filter((x) => Number(x.donations) || Number(x.other_income) || Number(x.expenses));
   if (!totals.length) { el.innerHTML = emptyBox(t('tr.empty'), 'shield'); return data; }
@@ -53,19 +43,20 @@ async function financeSummary(target, { full } = {}) {
 const pages = {
   async home() {
     photoSettings();
-    $('#catGrid').innerHTML = CATS.map((c) => `<article class="card media-card cat-card reveal"><div class="card-media">${stockPhoto(c, { ratio: 1.6, sizes: '(max-width:640px) 100vw, (max-width:980px) 50vw, 380px' })}</div>
-      <div class="body"><div class="ic">${icon(CATEGORY_ICON[c])}</div><h3>${esc(t('cat.' + c))}</h3><p>${esc(t('cat.' + c + '.text'))}</p></div></article>`).join('');
-    const jobs = [
-      fetchActivities(3).then((rows) => {
+    await Promise.allSettled([
+      loadSection($('#latest'), async () => {
+        const rows = await fetchActivities(3);
         $('#latest').innerHTML = rows.length
           ? `<div class="grid g3">${rows.map(activityCard).join('')}</div><p class="center mt"><a class="btn btn-green" href="${href('/activities/')}">${esc(t('act.more'))}${icon('right')}</a></p>`
-          : '';
-      }).catch(() => { $('#latest').innerHTML = ''; }),
-      fetchImpact().then((rows) => { $('#impactGrid').innerHTML = impactCards(rows); countUp($('#impactGrid')); })
-        .catch(() => { $('#impactGrid').innerHTML = impactCards([]); }),
-      financeSummary('#trSummary'),
-      db.from('humora_testimonials').select('person_name,description,description_bn,location,image_url').eq('is_published', true)
-        .order('created_at', { ascending: false }).limit(6).then(({ data }) => {
+          : `<p class="center"><a class="btn btn-green" href="${href('/activities/')}">${esc(t('act.more'))}${icon('right')}</a></p>`;
+      }),
+      loadSection($('#impactGrid'), async () => { const rows = await fetchImpact(); $('#impactGrid').innerHTML = impactCards(rows); countUp($('#impactGrid')); }),
+      loadSection($('#trSummary'), () => financeSummary('#trSummary')),
+      (async () => {
+        // Optional section: stays hidden unless there are published testimonials.
+        try {
+          const { data } = await db.from('humora_testimonials').select('person_name,description,description_bn,location,image_url').eq('is_published', true)
+            .order('created_at', { ascending: false }).limit(6);
           if (!data?.length) return;
           $('#testimonials').classList.remove('hidden');
           $('#tmGrid').innerHTML = data.map((x) => {
@@ -74,28 +65,32 @@ const pages = {
             <figcaption class="who">${img ? `<img src="${esc(img)}" alt="" loading="lazy" width="46" height="46">` : `<span class="av">${esc(x.person_name.slice(0, 1))}</span>`}
             <span><b>${esc(x.person_name)}</b>${x.location ? `<small>${esc(x.location)}</small>` : ''}</span></figcaption></figure>`;
           }).join('');
-        })
-    ];
-    await Promise.allSettled(jobs);
+        } catch (e) { console.warn('[humora] testimonials unavailable', e?.message || e); }
+      })()
+    ]);
   },
 
   async about() {
     photoSettings();
-    const { data, error } = await db.from('humora_founders').select('*').eq('is_published', true).order('sort_order');
     const g = $('#founderGrid');
-    if (error || !data?.length) { g.outerHTML = `<div id="founderGrid">${emptyBox(t('about.founders.empty'), 'users')}</div>`; return; }
+    await loadSection(g, async () => {
+    const { data, error } = await db.from('humora_founders').select('*').eq('is_published', true).order('sort_order');
+    if (error) throw error;
+    if (!data?.length) { g.className = ''; g.innerHTML = emptyBox(t('about.founders.empty'), 'users'); return; }
     g.innerHTML = data.map((f) => {
       const img = safeUrl(f.photo_url);
       return `<article class="card founder reveal"><div class="ph">${img ? `<img src="${esc(img)}" alt="${esc(L(f.name_en, f.name_bn))}" loading="lazy" width="120" height="120">` : icon('user')}</div>
         <h3>${esc(L(f.name_en, f.name_bn))}</h3>${L(f.role_en, f.role_bn) ? `<div class="role">${esc(L(f.role_en, f.role_bn))}</div>` : ''}
         <p>${esc(L(f.bio_en, f.bio_bn))}</p></article>`;
     }).join('');
+    });
   },
 
   async activities() {
-    const grid = $('#actGrid');
     let rows = [];
-    try { rows = await fetchActivities(); } catch (e) { grid.outerHTML = `<div id="actGrid">${emptyBox(friendlyError(e), 'alert')}</div>`; return; }
+    let ok = false;
+    await loadSection($('#actGrid'), async () => { rows = await fetchActivities(); ok = true; });
+    if (!ok) return;
     const present = ['all', ...new Set(rows.map((r) => r.category))];
     const params = new URLSearchParams(location.search);
     let active = present.includes(params.get('category')) ? params.get('category') : 'all';
@@ -118,7 +113,9 @@ const pages = {
     const body = $('#actBody');
     const fail = () => { $('#actTitle').textContent = t('nav.activities'); body.innerHTML = emptyBox(t('act.notfound'), 'alert') + `<p class="center mt"><a class="btn btn-green" href="${href('/activities/')}">${icon('left')}${esc(t('act.back'))}</a></p>`; };
     if (!/^[0-9a-f-]{36}$/i.test(id)) return fail();
-    const { data: a } = await db.from('humora_activities').select('*').eq('id', id).eq('status', 'published').maybeSingle();
+    await loadSection(body, async () => {
+    const { data: a, error } = await db.from('humora_activities').select('*').eq('id', id).eq('status', 'published').maybeSingle();
+    if (error) throw error;
     if (!a) return fail();
     const title = L(a.title_en, a.title_bn);
     $('#actTitle').textContent = title;
@@ -139,19 +136,25 @@ const pages = {
           <li>${icon('pin')}<span><small>${esc(t('act.location'))}</small>${esc(L(a.location, a.location_bn))}</span></li></ul></div>
           <a class="btn btn-gold mt" href="${href('/donate/')}">${icon('heart')}${esc(t('donate.cta'))}</a>
           <p class="mt"><a href="${href('/activities/')}">${esc(t('act.back'))}</a></p></aside></div>`;
+    });
   },
 
   async impact() {
-    try {
-      const rows = await fetchImpact();
-      $('#impactGrid').innerHTML = impactCards(rows); countUp($('#impactGrid'));
-      const latest = rows.filter((r) => r.is_verified).map((r) => r.updated_at).sort().pop();
-      if (latest) $('#impactUpdated').textContent = `${t('impact.updated')}: ${fmtDate(latest)}`;
-    } catch { $('#impactGrid').innerHTML = impactCards([]); }
-    const { data } = await db.from('humora_gallery').select('title,title_bn,image_url,activity_id').eq('is_published', true).order('created_at', { ascending: false }).limit(24);
+    await Promise.allSettled([
+      loadSection($('#impactGrid'), async () => {
+        const rows = await fetchImpact();
+        $('#impactGrid').innerHTML = impactCards(rows); countUp($('#impactGrid'));
+        const latest = rows.filter((r) => r.is_verified).map((r) => r.updated_at).sort().pop();
+        if (latest) $('#impactUpdated').textContent = `${t('impact.updated')}: ${fmtDate(latest)}`;
+      }),
+      loadSection($('#galleryWrap'), async () => {
+    const { data, error } = await db.from('humora_gallery').select('title,title_bn,image_url,activity_id').eq('is_published', true).order('created_at', { ascending: false }).limit(24);
+    if (error) throw error;
     $('#galleryWrap').innerHTML = data?.length
       ? `<div class="gallery">${data.map((p) => `<figure class="reveal"><img src="${esc(safeUrl(p.image_url))}" alt="${esc(L(p.title, p.title_bn))}" loading="lazy"><figcaption>${p.activity_id ? `<a href="${href('/activities/view/?id=' + p.activity_id)}">${esc(L(p.title, p.title_bn))}</a>` : esc(L(p.title, p.title_bn))}</figcaption></figure>`).join('')}</div>`
       : emptyBox(t('impact.gallery.empty'), 'image');
+      })
+    ]);
   },
 
   async donate() {
@@ -178,10 +181,14 @@ const pages = {
     $('#curSeg').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; cur = b.dataset.cur; amountInput.value = SUGGEST[cur][1]; drawAmounts(); drawMethods(); });
     const pre = new URLSearchParams(location.search);
     if (pre.get('currency') === 'USD') { cur = 'USD'; amountInput.value = SUGGEST.USD[1]; drawAmounts(); }
-    const { data } = await db.from('humora_payment_methods').select('id,name_en,name_bn,method_type,currency,account_name,account_details,instructions_en,instructions_bn')
-      .eq('is_active', true).eq('is_verified', true).order('sort_order');
-    methods = data || [];
-    drawMethods();
+    // The form works even if payment details cannot be loaded right now (the pledge is still recorded).
+    await loadSection($('#methods'), async () => {
+      const { data, error } = await db.from('humora_payment_methods').select('id,name_en,name_bn,method_type,currency,account_name,account_details,instructions_en,instructions_bn')
+        .eq('is_active', true).eq('is_verified', true).order('sort_order');
+      if (error) throw error;
+      methods = data || [];
+      drawMethods();
+    });
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -224,7 +231,17 @@ const pages = {
   },
 
   async transparency() {
-    const data = await financeSummary('#trSummary', { full: true });
+    const docsJob = loadSection($('#trDocs'), async () => {
+    const { data: docs, error } = await db.from('humora_financial_reports').select('*').eq('is_published', true).order('period_end', { ascending: false });
+    if (error) throw error;
+    $('#trDocs').innerHTML = docs?.length ? `<div class="grid g2">${docs.map((d) => `<article class="card doc reveal"><div class="ic">${icon('file')}</div><div>
+      <h3>${esc(L(d.title_en, d.title_bn))}</h3><div class="money-sub">${esc(t('tr.period'))}: ${esc(fmtDate(d.period_start))} – ${esc(fmtDate(d.period_end))}</div>
+      ${L(d.summary_en, d.summary_bn) ? `<p>${esc(L(d.summary_en, d.summary_bn))}</p>` : ''}
+      ${safeUrl(d.file_url) ? `<a href="${esc(safeUrl(d.file_url))}" target="_blank" rel="noopener">${icon('external')} ${esc(t('tr.download'))}</a>` : ''}</div></article>`).join('')}</div>`
+      : emptyBox(t('tr.statements.empty'), 'file');
+  });
+    let data = null;
+    await loadSection($('#trSummary'), async () => { data = await financeSummary('#trSummary', { full: true }); });
     const monthly = data?.monthly || [];
     $('#trMonthly').innerHTML = monthly.length ? `<div class="table-wrap"><table class="data"><thead><tr><th>${esc(t('tr.month'))}</th><th>${esc(t('donate.currency'))}</th>
       <th class="num">${esc(t('tr.income'))}</th><th class="num">${esc(t('tr.expenses'))}</th><th class="num">${esc(t('tr.net'))}</th></tr></thead><tbody>
@@ -233,15 +250,12 @@ const pages = {
     const cats = data?.by_category || [];
     $('#trCats').innerHTML = cats.length ? `<div class="table-wrap"><table class="data"><thead><tr><th>${esc(t('act.category'))}</th><th>${esc(t('donate.currency'))}</th><th class="num">${esc(t('tr.expenses'))}</th></tr></thead><tbody>
       ${cats.map((c) => `<tr><td>${esc(t('cat.' + c.category))}</td><td>${esc(c.currency)}</td><td class="num">${esc(fmtMoney(c.amount, c.currency))}</td></tr>`).join('')}</tbody></table></div>` : emptyBox(t('tr.empty'), 'receipt');
-    const { data: docs } = await db.from('humora_financial_reports').select('*').eq('is_published', true).order('period_end', { ascending: false });
-    $('#trDocs').innerHTML = docs?.length ? `<div class="grid g2">${docs.map((d) => `<article class="card doc reveal"><div class="ic">${icon('file')}</div><div>
-      <h3>${esc(L(d.title_en, d.title_bn))}</h3><div class="money-sub">${esc(t('tr.period'))}: ${esc(fmtDate(d.period_start))} – ${esc(fmtDate(d.period_end))}</div>
-      ${L(d.summary_en, d.summary_bn) ? `<p>${esc(L(d.summary_en, d.summary_bn))}</p>` : ''}
-      ${safeUrl(d.file_url) ? `<a href="${esc(safeUrl(d.file_url))}" target="_blank" rel="noopener">${icon('external')} ${esc(t('tr.download'))}</a>` : ''}</div></article>`).join('')}</div>`
-      : emptyBox(t('tr.statements.empty'), 'file');
+    await docsJob;
   },
 
   async contact() {
+    // The contact form is static HTML and always works; only the details panel waits for settings.
+    loadSection($('#contactInfo'), async () => {
     const s = await getSettings();
     const items = [
       s.contact_email && ['mail', t('contact.email_us'), `<a href="mailto:${esc(s.contact_email)}">${esc(s.contact_email)}</a>`],
@@ -254,6 +268,7 @@ const pages = {
     $('#contactInfo').innerHTML = `<span class="eyebrow">${esc(t('contact.eyebrow'))}</span><h2>${esc(t('contact.heading'))}</h2>
       ${items.length ? `<ul class="contact-list">${items.map(([ic, lb, v]) => `<li><span class="ic">${icon(ic)}</span><span><small>${esc(lb)}</small>${v}</span></li>`).join('')}</ul>` : `<p class="muted">${esc(t('contact.not_set'))}</p>`}
       ${socials ? `<h3 class="mt">${esc(t('contact.follow'))}</h3><div class="socials">${socials}</div>` : ''}`;
+    });
     const form = $('#contactForm');
     form.addEventListener('submit', async (e) => {
       e.preventDefault();

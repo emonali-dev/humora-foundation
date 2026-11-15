@@ -25,34 +25,29 @@ Test file: `supabase/tests/humora_rls_tests.sql`. It ran against the live Supaba
 
 Supabase security advisor: every warning for HUMORA objects has been fixed or is intentional. The public RPCs and `humora_can`/`humora_is_admin` (used inside RLS policies) are meant to be callable.
 
-## 2. Browser tests — 687/687 checks passed
+## 2. Browser tests — 1206/1206 checks passed
 Test file: `tests/browser_test.py`. It runs Playwright and Chrome with the production Content-Security-Policy. Supabase is replaced by an in-memory mock (`tests/mock-supabase.js`), because the test machine has no outbound network.
 
-- **Every page** (10 pages × 2 languages × desktop 1280px / mobile 390px):
-  - an `h1` renders
+- **Every page** (10 pages × English/Bangla × desktop 1280px, mobile 390px and small Android 360px):
+  - the `h1` is visible
   - `<html lang>` is correct
-  - no untranslated keys
-  - no English buttons in Bangla mode
+  - no untranslated keys, and no English buttons in Bangla mode
   - no broken images
   - no horizontal overflow
+  - nothing left loading (no `aria-busy`, no spinner)
+  - no blank or invisible sections
   - every internal link resolves
   - no console or CSP errors
+- **Slow CDN** (the library arrives after 4 s): the Bangla hero heading, the buttons and the menu are visible before the scripts finish.
+- **Main CDN blocked:** the fallback CDN (jsDelivr) loads the data.
+- **All external hosts blocked:** the page is still fully readable.
+- **Database errors:** each data section shows a message with a "Try again" button. Static content stays visible.
+- **Stalled database requests:** the requests time out, and every section shows the error message instead of spinning forever.
 - **Mobile menu:** opens, closes with Escape, and switches language. The language is remembered across pages.
-- **Donate:**
-  - required-field and email validation work
-  - successful submission shows the reference and the correct status
-  - adding a reference works, with both the "not found" and success cases
-- **Contact:** validation, successful send, and the WhatsApp link built from settings.
-- **Activity details:** an invalid id is handled gracefully.
+- **Donate and Contact:** validation, success, reference lookup, and the WhatsApp link.
 - **Impact:** a verified value shows a number; unverified values show "Coming Soon".
-- **404 page:** renders.
-- **Illustrative photos:** every stock photo on the Home and About pages carries the “Illustrative photo” label. A failed external image falls back to the neutral placeholder.
-- **Admin, in English and Bangla:**
-  - login screen; a wrong password is rejected
-  - the dashboard loads and all 14 modules render
-  - donation verification works
-  - required fields are enforced
-  - sign out works
+- **Illustrative photos:** each is labelled, and a failed photo falls back to a placeholder.
+- **Admin, in English and Bangla:** login, all 14 modules, donation verification, required fields, sign out.
 
 ## 3. Not tested here (requires deployment)
 - Real network calls from a browser to Supabase. The SQL behind them was tested directly, as listed above.

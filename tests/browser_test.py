@@ -48,7 +48,7 @@ with sync_playwright() as p:
         return page, errs
 
     for lang in ('en', 'bn'):
-        for width, tag in ((1280, 'desktop'), (390, 'mobile')):
+        for width, tag in ((1280, 'desktop'), (390, 'mobile'), (360, 'android-small')):
             page, errs = new_page(width)
             for path in PAGES:
                 url = BASE + path + (('&' if '?' in path else '?') + 'lang=bn' if lang == 'bn' else '')
@@ -63,9 +63,16 @@ with sync_playwright() as p:
                 raw = RAW_KEY.findall(body)
                 check(f'{name}: no raw i18n keys', not raw, ', '.join(raw[:5]))
                 if lang == 'bn':
-                    check(f'{name}: Bangla nav', 'হোম' in page.locator('#site-header').inner_text() or tag == 'mobile')
+                    check(f'{name}: Bangla nav', 'হোম' in page.locator('#site-header').inner_text() or tag != 'desktop')
                     eng_btn = page.locator('main a.btn, main button.btn').all_inner_texts()
                     check(f'{name}: no English buttons', not any(re.search(r'\b(Donate|Submit|Send|View|Back|Learn)\b', t) for t in eng_btn), str(eng_btn))
+                page.wait_for_timeout(2600)   # reveal safety net
+                busy = page.evaluate("document.querySelectorAll('[aria-busy=true], .spinner').length")
+                check(f'{name}: nothing left loading', busy == 0, str(busy))
+                hidden = page.evaluate("[...document.querySelectorAll('main section')].filter(s => !s.classList.contains('hidden') && getComputedStyle(s).display !== 'none' && (s.innerText.trim().length < 3 || [...s.querySelectorAll('.reveal')].some(r => getComputedStyle(r).opacity < 0.5))).map(s => s.id || s.className)")
+                check(f'{name}: no blank or invisible sections', not hidden, str(hidden))
+                hero_ok = page.evaluate("(() => { const h = document.querySelector('main h1'); if (!h) return false; const r = h.getBoundingClientRect(); return r.height > 10 && getComputedStyle(h).opacity > 0.9 && getComputedStyle(h).visibility === 'visible'; })()")
+                check(f'{name}: h1 visible', hero_ok)
                 broken = page.evaluate("[...document.images].filter(i => i.complete && i.naturalWidth === 0).map(i => i.src)")
                 check(f'{name}: no broken images', not broken, str(broken))
                 links = page.evaluate("[...document.querySelectorAll('a[href]')].map(a => a.getAttribute('href')).filter(h => h.startsWith('/'))")
@@ -92,10 +99,38 @@ with sync_playwright() as p:
     ctxo = browser.new_context(viewport={'width': 390, 'height': 800})
     ctxo.route(re.compile(r'https://(esm\.sh|cdn\.jsdelivr\.net|images\.pexels\.com|fonts\.).*'), lambda r: r.abort())
     po = ctxo.new_page(); po.goto(BASE + '/'); po.wait_for_timeout(1500)
-    op = po.evaluate("getComputedStyle(document.querySelector('.hero .reveal')).opacity")
+    op = po.evaluate("getComputedStyle(document.querySelector('.hero h1')).opacity")
     check('offline: hero text visible', float(op) > 0.9, op)
     check('offline: header rendered', po.locator('#site-header .nav .menu-btn').count() == 1)
     ctxo.close()
+
+    # ---- slow CDN: hero text and buttons must be visible before scripts finish
+    ctxs = browser.new_context(viewport={'width': 360, 'height': 740})
+    def slow(route):
+        import time; time.sleep(4); route.fulfill(status=200, content_type='application/javascript', body=MOCK)
+    ctxs.route(re.compile(r'https://esm\.sh/.*'), slow)
+    ctxs.route(re.compile(r'https://(images\.pexels\.com|fonts\.).*'), lambda r: r.fulfill(status=200, content_type='image/jpeg', body=PHOTO))
+    ps = ctxs.new_page(); ps.goto(BASE + '/?lang=bn', wait_until='domcontentloaded'); ps.wait_for_timeout(1200)
+    check('slow CDN: Bangla hero heading visible early', ps.locator('main h1').is_visible() and 'মানবতার' in ps.locator('main h1').inner_text())
+    check('slow CDN: hero buttons visible early', ps.locator('.hero .actions a').first.is_visible())
+    check('slow CDN: header menu rendered early', ps.locator('#site-header .menu-btn').count() >= 1)
+    ps.screenshot(path=str(SHOTS / 'slow-cdn-mobile.png'))
+    ctxs.close()
+
+    # ---- database errors and stalled requests never leave spinners or blank sections
+    for mode, wait in (('error', 1500), ('hang', 26000)):
+        ctxe = browser.new_context(viewport={'width': 412, 'height': 900})
+        ctxe.route(re.compile(r'https://esm\.sh/.*'), lambda r: r.fulfill(status=200, content_type='application/javascript', body=MOCK))
+        ctxe.route(re.compile(r'https://(images\.pexels\.com|fonts\.).*'), lambda r: r.fulfill(status=200, content_type='image/jpeg', body=PHOTO))
+        pe = ctxe.new_page()
+        for path in ('/', '/transparency/', '/impact/', '/activities/'):
+            pe.goto(BASE + path + '?mock=' + mode); pe.wait_for_timeout(wait if path == '/' or mode == 'error' else 26000)
+            busy = pe.evaluate("document.querySelectorAll('[aria-busy=true], .spinner').length")
+            check(f'db-{mode} {path}: no endless loading', busy == 0, str(busy))
+            check(f'db-{mode} {path}: error message with retry shown', pe.locator('.error-box button').count() >= 1)
+            check(f'db-{mode} {path}: static content still visible', pe.locator('main h1').is_visible())
+            if path == '/': pe.screenshot(path=str(SHOTS / f'db-{mode}-home.png'), full_page=True)
+        ctxe.close()
 
     # ---- interactions (English, mobile)
     page, errs = new_page(390)

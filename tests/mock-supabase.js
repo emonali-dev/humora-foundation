@@ -56,7 +56,18 @@ const finance = () => {
   const totals = ['BDT', 'USD'].map((c) => ({ currency: c, donations: sum(store.humora_donations, c, (x) => x.status === 'verified') + 5000 * (c === 'BDT'), other_income: 0, expenses: 1200 * (c === 'BDT'), donation_count: c === 'BDT' ? 3 : 0 }));
   return { enabled: true, totals, monthly: [{ month: today.slice(0, 7), currency: 'BDT', income: 5000, expenses: 1200 }], by_category: [{ category: 'winter', currency: 'BDT', amount: 1200 }] };
 };
+const MODE = new URLSearchParams(location.search).get('mock') || '';   // '', 'error', 'hang'
+const never = () => new Promise(() => {});
 export function createClient() {
+  if (MODE === 'error') {
+    const fail = { data: null, error: { message: 'Failed to fetch' } };
+    const q = { then: (r) => Promise.resolve(fail).then(r) }; ['select', 'eq', 'order', 'limit', 'maybeSingle', 'insert', 'update', 'upsert', 'delete'].forEach((k) => { q[k] = () => q; });
+    return { from: () => q, rpc: async () => fail, auth: { getUser: async () => ({ data: { user: null } }), onAuthStateChange: () => ({}) } };
+  }
+  if (MODE === 'hang') {
+    const q = { then: (r, j) => never().then(r, j) }; ['select', 'eq', 'order', 'limit', 'maybeSingle'].forEach((k) => { q[k] = () => q; });
+    return { from: () => q, rpc: never, auth: { getUser: async () => ({ data: { user: null } }), onAuthStateChange: () => ({}) } };
+  }
   return {
     from: (t) => new Q(t),
     rpc: async (name, args) => {

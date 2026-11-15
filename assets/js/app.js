@@ -9,14 +9,24 @@ import { PHOTOS, photoUrl, photoSrcset } from './photos.js';
 export let db = null;
 const dbReady = loadSupabase({ auth: { persistSession: false } }).then((c) => { db = c; return c; });
 export async function loadSupabase(opts) {
-  const sources = ['https://esm.sh/@supabase/supabase-js@2.49.4', 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/+esm'];
+  const sources = ['https://esm.sh/@supabase/supabase-js@2', 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm'];
   for (const src of sources) {
     try {
       const mod = await Promise.race([import(src), new Promise((_, no) => setTimeout(() => no(new Error('timeout')), 8000))]);
-      return mod.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, opts);
+      // Every request gets a hard timeout so a stalled connection can never leave a section loading forever.
+      return mod.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, { ...opts, global: { fetch: timedFetch } });
     } catch (e) { console.warn('[humora] could not load', src, e?.message || e); }
   }
   return offlineClient();
+}
+function timedFetch(input, init = {}) {
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), 15000);
+  if (init.signal) init.signal.addEventListener('abort', () => ctl.abort(), { once: true });
+  return fetch(input, { ...init, signal: ctl.signal }).finally(() => clearTimeout(timer));
+}
+export function withTimeout(promise, ms = 15000) {
+  return Promise.race([promise, new Promise((_, no) => setTimeout(() => no(new Error('Failed to fetch (timeout)')), ms))]);
 }
 function offlineClient() {
   const fail = { data: null, error: { message: 'Failed to fetch' } };
@@ -91,18 +101,20 @@ async function cached(key, ttlMs, loader) {
   return v;
 }
 export async function getSettings() {
-  if (!cache.settings) cache.settings = cached('settings', 5 * 60e3, async () => {
-    const { data } = await db.from('humora_settings').select('*').eq('id', 1).maybeSingle();
+  if (!cache.settings) cache.settings = withTimeout(cached('settings', 5 * 60e3, async () => {
+    const { data, error } = await db.from('humora_settings').select('*').eq('id', 1).maybeSingle();
+    if (error) throw error;
     return data || {};
-  }).catch(() => ({}));
+  }), 8000).catch(() => { delete cache.settings; return {}; });
   return cache.settings;
 }
 async function loadContent() {
-  const rows = await cached('content', 5 * 60e3, async () => {
+  // Optional: admin-edited texts. If unavailable the built-in texts are used, so never wait long.
+  const rows = await withTimeout(cached('content', 5 * 60e3, async () => {
     const { data, error } = await db.from('humora_content').select('key,value_en,value_bn');
     if (error) throw error;
     return data || [];
-  }).catch(() => []);
+  }), 4000).catch(() => []);
   for (const r of rows) overrides[r.key] = { en: r.value_en || '', bn: r.value_bn || '' };
 }
 export function friendlyError(error) {
@@ -252,8 +264,11 @@ function reveal() {
   document.documentElement.classList.add('js-ready');
   const els = document.querySelectorAll('.reveal:not(.in)');
   if (!('IntersectionObserver' in window)) { els.forEach((e) => e.classList.add('in')); return; }
-  const io = new IntersectionObserver((entries) => entries.forEach((en) => { if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); } }), { threshold: .12 });
+  const io = new IntersectionObserver((entries) => entries.forEach((en) => { if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); } }), { threshold: 0, rootMargin: '0px 0px 200px 0px' });
   els.forEach((e) => io.observe(e));
+  // Safety net: nothing may stay invisible if the observer does not fire (old browsers, print, screenshots).
+  clearTimeout(reveal.timer);
+  reveal.timer = setTimeout(() => document.querySelectorAll('.reveal:not(.in)').forEach((e) => e.classList.add('in')), 2500);
 }
 export const observeReveal = reveal;
 
@@ -318,10 +333,38 @@ export function stockPhoto(key, { ratio = 1.5, sizes = '100vw', eager = false, c
     <figcaption class="photo-badge" title="${esc(t('photo.note'))}">${icon('image')}<span>${esc(t('photo.illustrative'))}</span><small>· ${esc(p.credit)} / Pexels</small></figcaption></figure>`;
 }
 function applyPhotos(root = document) {
+  // Photos are pre-rendered in the HTML (no JavaScript needed to see them); here we only
+  // translate the alt text and the "Illustrative photo" label.
   root.querySelectorAll('[data-photo]').forEach((el) => {
-    if (el.dataset.done) return; el.dataset.done = '1';
-    el.innerHTML = stockPhoto(el.dataset.photo, { ratio: Number(el.dataset.ratio) || 1.5, sizes: el.dataset.sizes || '100vw', eager: el.hasAttribute('data-eager') });
+    const p = PHOTOS[el.dataset.photo]; if (!p) return;
+    const img = el.querySelector('img');
+    if (!img) { el.innerHTML = stockPhoto(el.dataset.photo); return; }
+    img.alt = L(p.en, p.bn);
   });
+  root.querySelectorAll('#heroPhoto .photo img, #aboutVisual .photo img').forEach((img) => {
+    const key = img.closest('#heroPhoto') ? 'hero' : 'about'; img.alt = L(PHOTOS[key].en, PHOTOS[key].bn);
+  });
+  root.querySelectorAll('.photo-badge').forEach((b) => b.setAttribute('title', t('photo.note')));
+}
+
+/* ------------------------------------------------------- data sections */
+// Runs a loader for one section. While it runs the pre-rendered skeleton stays; on failure the
+// section shows a clear message with a Retry button instead of an endless spinner or a blank area.
+export async function loadSection(el, loader) {
+  if (!el) return;
+  el.setAttribute('aria-busy', 'true');
+  try {
+    await withTimeout(Promise.resolve().then(loader));
+  } catch (e) {
+    console.warn('[humora] section failed:', e?.message || e);
+    el.className = el.className.replace(/\bgrid\b|\bg[234]\b/g, '').trim();
+    el.innerHTML = `<div class="empty error-box">${icon('alert')}<p>${esc(friendlyError(e))}</p>
+      <button type="button" class="btn btn-sm btn-outline">${esc(t('common.retry'))}</button></div>`;
+    el.querySelector('button').addEventListener('click', () => location.reload());
+  } finally {
+    el.removeAttribute('aria-busy');
+    reveal();
+  }
 }
 // If an external image ever fails, show the neutral placeholder instead of a broken icon.
 document.addEventListener('error', (e) => {
