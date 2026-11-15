@@ -81,6 +81,22 @@ with sync_playwright() as p:
                 if path in ('/donate/', '/transparency/', '/activities/') and tag == 'desktop' and lang == 'en': page.screenshot(path=str(SHOTS / f'{path.strip("/")}-en.png'), full_page=True)
             check(f'{lang}/{tag}: no console errors', not errs, ' | '.join(errs[:3]))
 
+    # ---- resilience: primary CDN down -> fallback CDN; both down -> page still readable
+    ctxf = browser.new_context(viewport={'width': 390, 'height': 800})
+    ctxf.route(re.compile(r'https://esm\.sh/.*'), lambda r: r.abort())
+    ctxf.route(re.compile(r'https://cdn\.jsdelivr\.net/.*'), lambda r: r.fulfill(status=200, content_type='application/javascript', body=MOCK))
+    ctxf.route(re.compile(r'https://(images\.pexels\.com|fonts\.).*'), lambda r: r.abort())
+    pf = ctxf.new_page(); pf.goto(BASE + '/'); pf.wait_for_load_state('networkidle'); pf.wait_for_timeout(500)
+    check('fallback CDN loads data', 'Winter blanket' in pf.locator('#latest').inner_text())
+    ctxf.close()
+    ctxo = browser.new_context(viewport={'width': 390, 'height': 800})
+    ctxo.route(re.compile(r'https://(esm\.sh|cdn\.jsdelivr\.net|images\.pexels\.com|fonts\.).*'), lambda r: r.abort())
+    po = ctxo.new_page(); po.goto(BASE + '/'); po.wait_for_timeout(1500)
+    op = po.evaluate("getComputedStyle(document.querySelector('.hero .reveal')).opacity")
+    check('offline: hero text visible', float(op) > 0.9, op)
+    check('offline: header rendered', po.locator('#site-header .nav .menu-btn').count() == 1)
+    ctxo.close()
+
     # ---- interactions (English, mobile)
     page, errs = new_page(390)
     page.goto(BASE + '/'); page.wait_for_load_state('networkidle')

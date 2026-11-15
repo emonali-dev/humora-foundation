@@ -25,7 +25,7 @@ Test file: `supabase/tests/humora_rls_tests.sql`. It ran against the live Supaba
 
 Supabase security advisor: every warning for HUMORA objects has been fixed or is intentional. The public RPCs and `humora_can`/`humora_is_admin` (used inside RLS policies) are meant to be callable.
 
-## 2. Browser tests — 684/684 checks passed
+## 2. Browser tests — 687/687 checks passed
 Test file: `tests/browser_test.py`. It runs Playwright and Chrome with the production Content-Security-Policy. Supabase is replaced by an in-memory mock (`tests/mock-supabase.js`), because the test machine has no outbound network.
 
 - **Every page** (10 pages × 2 languages × desktop 1280px / mobile 390px):

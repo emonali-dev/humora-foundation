@@ -1,13 +1,13 @@
 // HUMORA FOUNDATION – admin dashboard.
 // The browser only decides which screens to show. Every read and write is
 // enforced by Row Level Security in the database (see supabase/migrations).
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.4';
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from './config.js';
 import { STRINGS } from './strings.js';
 import { icon } from './icons.js';
 
 const AUTH_TYPE = (() => { const m = (location.hash + '&' + location.search).match(/[#&?]type=([a-z_]+)/); return m ? m[1] : ''; })();
-const db = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
+import { loadSupabase } from './app.js';
+const db = await loadSupabase({ auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
 const $ = (s, r = document) => r.querySelector(s);
 const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 let lang = (() => { try { return localStorage.getItem('humora_lang') === 'bn' ? 'bn' : 'en'; } catch { return 'en'; } })();

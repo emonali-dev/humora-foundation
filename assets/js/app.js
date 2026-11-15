@@ -1,11 +1,28 @@
 // HUMORA FOUNDATION – public website runtime (language, layout, data, pages).
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.4';
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, SITE_URL } from './config.js';
 import { STRINGS } from './strings.js';
 import { icon, CATEGORY_ICON } from './icons.js';
 import { PHOTOS, photoUrl, photoSrcset } from './photos.js';
 
-export const db = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, { auth: { persistSession: false } });
+// The page must render even when a CDN is slow or blocked, so the Supabase library is
+// loaded dynamically with a fallback CDN, and an offline stub keeps the layout working.
+export let db = null;
+const dbReady = loadSupabase({ auth: { persistSession: false } }).then((c) => { db = c; return c; });
+export async function loadSupabase(opts) {
+  const sources = ['https://esm.sh/@supabase/supabase-js@2.49.4', 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/+esm'];
+  for (const src of sources) {
+    try {
+      const mod = await Promise.race([import(src), new Promise((_, no) => setTimeout(() => no(new Error('timeout')), 8000))]);
+      return mod.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, opts);
+    } catch (e) { console.warn('[humora] could not load', src, e?.message || e); }
+  }
+  return offlineClient();
+}
+function offlineClient() {
+  const fail = { data: null, error: { message: 'Failed to fetch' } };
+  const chain = () => { const q = { then: (r) => Promise.resolve(fail).then(r) }; for (const k of ['select', 'eq', 'order', 'limit', 'maybeSingle', 'insert', 'update', 'upsert', 'delete']) q[k] = () => q; return q; };
+  return { from: chain, rpc: async () => fail, offline: true };
+}
 
 /* ------------------------------------------------------------------ language */
 const LANG_KEY = 'humora_lang';
@@ -112,9 +129,11 @@ function langSwitch() {
     <button type="button" lang="bn" data-lang="bn" aria-pressed="${lang === 'bn'}">বাংলা</button></div>`;
 }
 
+let headerWired = false;
 function renderHeader() {
   const el = document.getElementById('site-header');
   if (!el) return;
+  document.getElementById('mobile-panel')?.remove();
   const cur = current();
   const links = NAV.map(([p, k]) => `<li><a href="${href(p)}"${cur === p ? ' aria-current="page"' : ''}>${esc(t(k))}</a></li>`).join('');
   el.className = 'site-header';
@@ -147,10 +166,14 @@ function renderHeader() {
   openBtn.addEventListener('click', () => toggle(true));
   panel.querySelector('.close').addEventListener('click', () => toggle(false));
   panel.addEventListener('click', (e) => { if (e.target === panel) toggle(false); });
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && panel.classList.contains('open')) toggle(false); });
+  if (!headerWired) {
+    headerWired = true;
+    document.addEventListener('keydown', (e) => { const p = document.getElementById('mobile-panel'); if (e.key === 'Escape' && p?.classList.contains('open')) p.querySelector('.close').click(); });
+  }
   [el, panel].forEach((r) => r.querySelectorAll('[data-lang]').forEach((b) => b.addEventListener('click', () => setLang(b.dataset.lang))));
   const onScroll = () => el.classList.toggle('scrolled', window.scrollY > 8);
-  window.addEventListener('scroll', onScroll, { passive: true }); onScroll();
+  if (!el.dataset.scrollWired) { el.dataset.scrollWired = '1'; window.addEventListener('scroll', onScroll, { passive: true }); }
+  onScroll();
 }
 
 function socialLinks(s) {
@@ -226,7 +249,8 @@ function applyMeta() {
 }
 
 function reveal() {
-  const els = document.querySelectorAll('.reveal');
+  document.documentElement.classList.add('js-ready');
+  const els = document.querySelectorAll('.reveal:not(.in)');
   if (!('IntersectionObserver' in window)) { els.forEach((e) => e.classList.add('in')); return; }
   const io = new IntersectionObserver((entries) => entries.forEach((en) => { if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); } }), { threshold: .12 });
   els.forEach((e) => io.observe(e));
@@ -336,12 +360,16 @@ export function validate(form, rules) {
 /* ---------------------------------------------------------------- boot */
 export async function boot(pageInit) {
   applyMeta();
+  applyI18n();
+  renderHeader();
+  applyPhotos();
+  reveal();
+  await dbReady;                 // content from the database (texts, settings, data)
   await loadContent();
   applyMeta();
   applyI18n();
   renderHeader();
   renderFooter();
-  applyPhotos();
   try { if (pageInit) await pageInit(); } catch (e) { console.warn('[humora]', e?.message || e); }
   applyI18n();
   applyPhotos();
