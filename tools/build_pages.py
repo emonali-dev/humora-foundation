@@ -6,7 +6,7 @@ Bangla (or for admin-edited content) at runtime."""
 import pathlib, html
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SITE = 'https://humora-foundation.vercel.app'
-V = '20261115'
+V = '20261115b'
 import re, json
 strings_js = (ROOT / 'assets/js/strings.js').read_text(encoding='utf-8')
 # crude parser for the en block, enough to pre-render English text for SEO/no-JS
@@ -29,10 +29,13 @@ def page(path, title_key, body, desc_key='c.mission.text', page_id='', keep_quer
 <link rel="alternate" hreflang="x-default" href="{url}">'''
     jsonld = ''
     if path == '/':
+        hid = 9823013
+        ss = ', '.join(f'https://images.pexels.com/photos/{hid}/pexels-photo-{hid}.jpeg?auto=compress&cs=tinysrgb&fit=crop&w={w}&h={round(w/1.6)} {w}w' for w in (480, 768, 1080, 1600, 2000))
+        jsonld_pre = f'<link rel="preconnect" href="https://images.pexels.com">\n<link rel="preload" as="image" imagesrcset="{ss}" imagesizes="100vw" fetchpriority="high">\n'
         ld = {'@context': 'https://schema.org', '@type': 'NGO', 'name': 'HUMORA FOUNDATION', 'alternateName': 'হিউমোরা ফাউন্ডেশন',
               'url': SITE + '/', 'logo': SITE + '/assets/img/icon-512.png', 'slogan': EN['meta.tagline'],
               'description': EN['c.mission.text'], 'areaServed': ['Bangladesh', 'International']}
-        jsonld = '<script type="application/ld+json">' + json.dumps(ld, ensure_ascii=False) + '</script>'
+        jsonld = jsonld_pre + '<script type="application/ld+json">' + json.dumps(ld, ensure_ascii=False) + '</script>'
     out = f'''<!doctype html>
 <html lang="en">
 <head>
@@ -84,9 +87,10 @@ def page(path, title_key, body, desc_key='c.mission.text', page_id='', keep_quer
     target.write_text(out, encoding='utf-8')
     return target
 
-def hero(eyebrow, title, intro, crumb=True):
+def hero(eyebrow, title, intro, crumb=True, photo=None):
     c = f'<div class="crumbs"><a href="/" data-href="/" data-i18n="nav.home">Home</a> / {T(eyebrow)}</div>' if crumb else ''
-    return f'''<section class="page-hero"><div class="container">{c}{T(title,'h1')}{T(intro,'p')}</div></section>'''
+    bg = f'<div class="page-hero-photo" data-photo="{photo}" data-ratio="2.4" data-sizes="100vw" data-eager></div>' if photo else ''
+    return f'''<section class="page-hero{' with-photo' if photo else ''}">{bg}<div class="container">{c}{T(title,'h1')}{T(intro,'p')}</div></section>'''
 
 # ---------------------------------------------------------------- home
 home = f'''
@@ -114,9 +118,9 @@ home = f'''
 <section class="block" id="mission"><div class="container">
   <div class="section-head center reveal">{T('mission.eyebrow','span','eyebrow')}{T('mission.heading','h2')}{T('c.mission.text','p')}</div>
   <div class="grid g3">
-    <article class="card reveal"><div class="ic" data-icon="home"></div>{T('c.mission.c1.title','h3')}{T('c.mission.c1.text','p')}</article>
-    <article class="card gold reveal"><div class="ic" data-icon="smile"></div>{T('c.mission.c2.title','h3')}{T('c.mission.c2.text','p')}</article>
-    <article class="card navy reveal"><div class="ic" data-icon="buoy"></div>{T('c.mission.c3.title','h3')}{T('c.mission.c3.text','p')}</article>
+    <article class="card media-card reveal"><div class="card-media" data-photo="families" data-ratio="1.5" data-sizes="(max-width:640px) 100vw, (max-width:980px) 50vw, 380px"></div><div class="body"><div class="ic" data-icon="home"></div>{T('c.mission.c1.title','h3')}{T('c.mission.c1.text','p')}</div></article>
+    <article class="card media-card gold reveal"><div class="card-media" data-photo="street" data-ratio="1.5" data-sizes="(max-width:640px) 100vw, (max-width:980px) 50vw, 380px"></div><div class="body"><div class="ic" data-icon="smile"></div>{T('c.mission.c2.title','h3')}{T('c.mission.c2.text','p')}</div></article>
+    <article class="card media-card navy reveal"><div class="card-media" data-photo="emergency" data-ratio="1.5" data-sizes="(max-width:640px) 100vw, (max-width:980px) 50vw, 380px"></div><div class="body"><div class="ic" data-icon="buoy"></div>{T('c.mission.c3.title','h3')}{T('c.mission.c3.text','p')}</div></article>
   </div>
 </div></section>
 
@@ -140,8 +144,9 @@ home = f'''
 </div></section>
 
 <section class="block" id="donate"><div class="container">
-  <div class="donate-band reveal"><div>{T('donate.eyebrow','span','eyebrow')}{T('c.donate.headline','h2')}{T('c.donate.text','p')}</div>
+  <div class="donate-band with-photo reveal"><div class="donate-copy">{T('donate.eyebrow','span','eyebrow')}{T('c.donate.headline','h2')}{T('c.donate.text','p')}
     <a class="btn btn-gold" data-href="/donate/" href="/donate/" data-icon="heart">{T('donate.cta')}</a></div>
+    <div class="donate-photo" data-photo="donate" data-ratio="1.25" data-sizes="(max-width:760px) 100vw, 480px"></div></div>
 </div></section>
 
 <section class="block alt tight" id="transparency"><div class="container">
@@ -158,7 +163,7 @@ home = f'''
 page('/', None, home, page_id='home')
 
 # ---------------------------------------------------------------- about
-about = hero('nav.about', 'c.about.title', 'c.mission.text') + f'''
+about = hero('nav.about', 'c.about.title', 'c.mission.text', photo='about') + f'''
 <section class="block alt"><div class="container split">
   <div class="reveal">{T('about.eyebrow','span','eyebrow')}{T('c.about.title','h2')}{T('c.about.text','p','muted')}</div>
   <div class="visual reveal" id="aboutVisual"><div class="trio"><span data-icon="heart"></span><span data-icon="users"></span><span data-icon="sparkles"></span></div>
@@ -179,7 +184,17 @@ about = hero('nav.about', 'c.about.title', 'c.mission.text') + f'''
     <article class="card reveal"><div class="ic" data-icon="file"></div>{T('about.how.3','p')}</article>
   </div>
 </div></section>
-<section class="block" id="founders"><div class="container">
+<section class="block" id="moments"><div class="container">
+  <div class="section-head center reveal">{T('about.gallery.eyebrow','span','eyebrow')}{T('about.gallery.title','h2')}{T('about.gallery.text','p')}</div>
+  <div class="mosaic">
+    <div class="m1 reveal" data-photo="children" data-ratio="1" data-sizes="(max-width:760px) 100vw, 50vw"></div>
+    <div class="m2 reveal" data-photo="elderly" data-ratio="1.5" data-sizes="(max-width:760px) 100vw, 25vw"></div>
+    <div class="m3 reveal" data-photo="education" data-ratio="1.5" data-sizes="(max-width:760px) 100vw, 25vw"></div>
+    <div class="m4 reveal" data-photo="medical" data-ratio="1.5" data-sizes="(max-width:760px) 100vw, 25vw"></div>
+    <div class="m5 reveal" data-photo="clothing" data-ratio="1.5" data-sizes="(max-width:760px) 100vw, 25vw"></div>
+  </div>
+</div></section>
+<section class="block alt" id="founders"><div class="container">
   <div class="section-head center reveal">{T('about.founders','h2')}</div>
   <div class="grid g3" id="founderGrid"><div class="spinner"></div></div>
 </div></section>
@@ -187,7 +202,7 @@ about = hero('nav.about', 'c.about.title', 'c.mission.text') + f'''
 page('/about/', 'nav.about', about, desc_key='c.about.text', page_id='about')
 
 # ---------------------------------------------------------------- activities
-acts = hero('nav.activities', 'act.heading', 'c.activities.intro') + '''
+acts = hero('nav.activities', 'act.heading', 'c.activities.intro', photo='food') + '''
 <section class="block"><div class="container">
   <div class="filters" id="filters" role="group"></div>
   <div class="grid g3" id="actGrid"><div class="spinner"></div></div>
@@ -200,7 +215,7 @@ view = f'''<section class="page-hero"><div class="container"><div class="crumbs"
 page('/activities/view/', 'nav.activities', view, desc_key='c.activities.intro', page_id='activity', keep_query=True)
 
 # ---------------------------------------------------------------- impact
-impact = hero('nav.impact', 'impact.heading', 'c.impact.intro') + f'''
+impact = hero('nav.impact', 'impact.heading', 'c.impact.intro', photo='children') + f'''
 <section class="block"><div class="container">
   <div class="grid g4" id="impactGrid"><div class="spinner"></div></div>
   <p class="center muted mt" id="impactUpdated"></p>
@@ -213,7 +228,7 @@ impact = hero('nav.impact', 'impact.heading', 'c.impact.intro') + f'''
 page('/impact/', 'nav.impact', impact, desc_key='c.impact.intro', page_id='impact')
 
 # ---------------------------------------------------------------- donate
-donate = hero('donate.eyebrow', 'c.donate.headline', 'c.donate.text') + f'''
+donate = hero('donate.eyebrow', 'c.donate.headline', 'c.donate.text', photo='donate') + f'''
 <section class="block"><div class="container donate-layout">
   <div class="card" id="donateCard">
     <form id="donateForm" class="form" novalidate>
@@ -274,7 +289,7 @@ tr = hero('nav.transparency', 'tr.heading', 'c.transparency.intro') + f'''
 page('/transparency/', 'nav.transparency', tr, desc_key='c.transparency.intro', page_id='transparency')
 
 # ---------------------------------------------------------------- contact
-contact = hero('nav.contact', 'contact.heading', 'c.contact.intro') + f'''
+contact = hero('nav.contact', 'contact.heading', 'c.contact.intro', photo='about') + f'''
 <section class="block"><div class="container split">
   <div class="card reveal">
     <form id="contactForm" class="form" novalidate>

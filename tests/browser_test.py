@@ -9,6 +9,7 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 SHOTS = ROOT / 'tests' / 'screenshots'; SHOTS.mkdir(exist_ok=True)
 MOCK = (ROOT / 'tests' / 'mock-supabase.js').read_text()
 PIC = (ROOT / 'tests' / 'pic.png').read_bytes()
+PHOTO = (ROOT / 'tests' / 'photo.jpg').read_bytes()
 PORT = 8765
 import json
 CSP = next(h['value'] for h in json.loads((ROOT / 'vercel.json').read_text())['headers'][0]['headers'] if h['key'] == 'Content-Security-Policy').replace(' upgrade-insecure-requests', '')
@@ -38,6 +39,7 @@ with sync_playwright() as p:
         ctx = browser.new_context(viewport={'width': width, 'height': 900}, device_scale_factor=1)
         ctx.route(re.compile(r'https://esm\.sh/.*'), lambda r: r.fulfill(status=200, content_type='application/javascript', body=MOCK))
         ctx.route(re.compile(r'https://ketzuhfolwhofrnliirf\.supabase\.co/storage/.*'), lambda r: r.fulfill(status=200, content_type='image/png', body=PIC))
+        ctx.route(re.compile(r'https://images\.pexels\.com/.*'), lambda r: r.fulfill(status=200, content_type='image/jpeg', body=PHOTO))
         ctx.route(re.compile(r'https://fonts\.(googleapis|gstatic)\.com/.*'), lambda r: r.fulfill(status=200, content_type='text/css', body=''))
         page = ctx.new_page()
         errs = []
@@ -72,6 +74,8 @@ with sync_playwright() as p:
                     f = ROOT / target.strip('/') / 'index.html' if not target.endswith('.html') else ROOT / target.strip('/')
                     if target == '/': f = ROOT / 'index.html'
                     check(f'{name}: link {l}', f.exists() or (ROOT / target.strip('/')).is_file())
+                if path in ('/', '/about/'):
+                    check(f'{name}: stock photos labelled', page.locator('.photo').count() > 0 and page.locator('.photo').count() == page.locator('.photo .photo-badge').count())
                 if path == '/' and tag == 'desktop': page.screenshot(path=str(SHOTS / f'home-{lang}-desktop.png'), full_page=True)
                 if path == '/' and tag == 'mobile': page.screenshot(path=str(SHOTS / f'home-{lang}-mobile.png'), full_page=True)
                 if path in ('/donate/', '/transparency/', '/activities/') and tag == 'desktop' and lang == 'en': page.screenshot(path=str(SHOTS / f'{path.strip("/")}-en.png'), full_page=True)

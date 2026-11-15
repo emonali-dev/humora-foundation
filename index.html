@@ -30,7 +30,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="/assets/css/site.css?v=20261115">
+<link rel="stylesheet" href="/assets/css/site.css?v=20261115b">
+<link rel="preconnect" href="https://images.pexels.com">
+<link rel="preload" as="image" imagesrcset="https://images.pexels.com/photos/9823013/pexels-photo-9823013.jpeg?auto=compress&cs=tinysrgb&fit=crop&w=480&h=300 480w, https://images.pexels.com/photos/9823013/pexels-photo-9823013.jpeg?auto=compress&cs=tinysrgb&fit=crop&w=768&h=480 768w, https://images.pexels.com/photos/9823013/pexels-photo-9823013.jpeg?auto=compress&cs=tinysrgb&fit=crop&w=1080&h=675 1080w, https://images.pexels.com/photos/9823013/pexels-photo-9823013.jpeg?auto=compress&cs=tinysrgb&fit=crop&w=1600&h=1000 1600w, https://images.pexels.com/photos/9823013/pexels-photo-9823013.jpeg?auto=compress&cs=tinysrgb&fit=crop&w=2000&h=1250 2000w" imagesizes="100vw" fetchpriority="high">
 <script type="application/ld+json">{"@context": "https://schema.org", "@type": "NGO", "name": "HUMORA FOUNDATION", "alternateName": "হিউমোরা ফাউন্ডেশন", "url": "https://humora-foundation.vercel.app/", "logo": "https://humora-foundation.vercel.app/assets/img/icon-512.png", "slogan": "A Little Help, A Brighter Future.", "description": "Bringing hope, dignity and support to underprivileged people, street children, poor families and vulnerable communities.", "areaServed": ["Bangladesh", "International"]}</script>
 </head>
 <body data-page="home" data-desc="c.mission.text">
@@ -62,9 +64,9 @@
 <section class="block" id="mission"><div class="container">
   <div class="section-head center reveal"><span class="eyebrow" data-i18n="mission.eyebrow">Our Mission</span><h2 data-i18n="mission.heading">Hope, dignity and support for those who need it most</h2><p data-i18n="c.mission.text">Bringing hope, dignity and support to underprivileged people, street children, poor families and vulnerable communities.</p></div>
   <div class="grid g3">
-    <article class="card reveal"><div class="ic" data-icon="home"></div><h3 data-i18n="c.mission.c1.title">Helping Poor Families</h3><p data-i18n="c.mission.c1.text">Food, clothing and essential support for families struggling to meet their basic needs.</p></article>
-    <article class="card gold reveal"><div class="ic" data-icon="smile"></div><h3 data-i18n="c.mission.c2.title">Supporting Street Children</h3><p data-i18n="c.mission.c2.text">Care, nutrition and learning opportunities so that children living on the streets can dream of a better future.</p></article>
-    <article class="card navy reveal"><div class="ic" data-icon="buoy"></div><h3 data-i18n="c.mission.c3.title">Emergency Humanitarian Assistance</h3><p data-i18n="c.mission.c3.text">Rapid help for people affected by floods, cold waves, fires and other emergencies.</p></article>
+    <article class="card media-card reveal"><div class="card-media" data-photo="families" data-ratio="1.5" data-sizes="(max-width:640px) 100vw, (max-width:980px) 50vw, 380px"></div><div class="body"><div class="ic" data-icon="home"></div><h3 data-i18n="c.mission.c1.title">Helping Poor Families</h3><p data-i18n="c.mission.c1.text">Food, clothing and essential support for families struggling to meet their basic needs.</p></div></article>
+    <article class="card media-card gold reveal"><div class="card-media" data-photo="street" data-ratio="1.5" data-sizes="(max-width:640px) 100vw, (max-width:980px) 50vw, 380px"></div><div class="body"><div class="ic" data-icon="smile"></div><h3 data-i18n="c.mission.c2.title">Supporting Street Children</h3><p data-i18n="c.mission.c2.text">Care, nutrition and learning opportunities so that children living on the streets can dream of a better future.</p></div></article>
+    <article class="card media-card navy reveal"><div class="card-media" data-photo="emergency" data-ratio="1.5" data-sizes="(max-width:640px) 100vw, (max-width:980px) 50vw, 380px"></div><div class="body"><div class="ic" data-icon="buoy"></div><h3 data-i18n="c.mission.c3.title">Emergency Humanitarian Assistance</h3><p data-i18n="c.mission.c3.text">Rapid help for people affected by floods, cold waves, fires and other emergencies.</p></div></article>
   </div>
 </div></section>
 
@@ -88,8 +90,9 @@
 </div></section>
 
 <section class="block" id="donate"><div class="container">
-  <div class="donate-band reveal"><div><span class="eyebrow" data-i18n="donate.eyebrow">Donate</span><h2 data-i18n="c.donate.headline">Your Kindness Can Change a Life.</h2><p data-i18n="c.donate.text">Every contribution — big or small — helps us feed a family, keep a child warm and support people in crisis.</p></div>
+  <div class="donate-band with-photo reveal"><div class="donate-copy"><span class="eyebrow" data-i18n="donate.eyebrow">Donate</span><h2 data-i18n="c.donate.headline">Your Kindness Can Change a Life.</h2><p data-i18n="c.donate.text">Every contribution — big or small — helps us feed a family, keep a child warm and support people in crisis.</p>
     <a class="btn btn-gold" data-href="/donate/" href="/donate/" data-icon="heart"><span data-i18n="donate.cta">Donate Now</span></a></div>
+    <div class="donate-photo" data-photo="donate" data-ratio="1.25" data-sizes="(max-width:760px) 100vw, 480px"></div></div>
 </div></section>
 
 <section class="block alt tight" id="transparency"><div class="container">
@@ -106,6 +109,6 @@
 </main>
 <footer id="site-footer" class="site-footer"></footer>
 <noscript><p class="container">HUMORA FOUNDATION – A Little Help, A Brighter Future.</p></noscript>
-<script type="module" src="/assets/js/main.js?v=20261115"></script>
+<script type="module" src="/assets/js/main.js?v=20261115b"></script>
 </body>
 </html>

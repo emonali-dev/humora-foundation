@@ -47,6 +47,13 @@ sitemap.xml, robots.txt, site.webmanifest
 
 The logo (`assets/img/logo.svg`, `logo-light.svg`, `logo-mark.svg`) is a heart made of navy and green halves holding a gold person, a symbol of care and hope.
 
+## 2a. Photography
+
+- Illustrative humanitarian photos (Pexels licence: free for commercial use) are listed in `assets/js/photos.js`. They appear in the Hero, Mission, About, Activities, Donation and inner-page headers.
+- Each one is labelled **“Illustrative photo / প্রতীকী ছবি”** and credits the photographer. A note in the footer explains that these photos do not show HUMORA's own work.
+- Photos are served responsively from the Pexels CDN (`srcset`, compressed, cropped to size). They are lazy-loaded below the fold, and the hero image is preloaded.
+- Real photos uploaded in the admin replace the stock images and carry no label: Settings → hero/about photo, and Activities.
+
 ## 3. Bilingual system
 
 - The language switcher (English | বাংলা) is in the header and in the mobile menu.

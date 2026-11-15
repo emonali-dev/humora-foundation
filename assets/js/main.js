@@ -1,7 +1,7 @@
 // Entry point for every public page: picks the page handler from <body data-page>.
 import {
   boot, db, t, L, lang, esc, safeUrl, fmtNum, fmtMoney, fmtDate, fmtMonth, href, richText, getSettings, friendlyError,
-  activityCard, emptyBox, fetchActivities, fetchImpact, impactCards, countUp, validate, waLink, observeReveal
+  activityCard, emptyBox, fetchActivities, fetchImpact, impactCards, countUp, validate, waLink, observeReveal, stockPhoto
 } from './app.js';
 import { icon, CATEGORY_ICON } from './icons.js';
 
@@ -10,14 +10,19 @@ const CATS = ['food', 'clothing', 'children', 'medical', 'winter', 'education'];
 
 async function photoSettings() {
   const s = await getSettings();
-  const hero = safeUrl(s.hero_image_url);
-  if (hero && $('#heroPhoto')) {
-    $('#heroPhoto').innerHTML = `<img src="${esc(hero)}" alt="" fetchpriority="high">`;
-    $('#heroPhoto').classList.remove('hidden');
+  const heroBox = $('#heroPhoto');
+  if (heroBox) {
+    const real = safeUrl(s.hero_image_url);
+    // A verified photo uploaded by the foundation wins; otherwise an illustrative, clearly labelled stock photo.
+    heroBox.innerHTML = real ? `<img src="${esc(real)}" alt="" fetchpriority="high">` : stockPhoto('hero', { ratio: 1.6, sizes: '100vw', eager: true });
+    heroBox.classList.remove('hidden');
+    heroBox.closest('.hero')?.classList.add('has-photo');
   }
   const about = safeUrl(s.about_image_url);
   document.querySelectorAll('#aboutVisual').forEach((v) => {
-    if (about) v.insertAdjacentHTML('afterbegin', `<img class="photo" src="${esc(about)}" alt="" loading="lazy">`);
+    v.insertAdjacentHTML('afterbegin', about ? `<img class="photo-real" src="${esc(about)}" alt="" loading="lazy">`
+      : stockPhoto('about', { ratio: 1.25, sizes: '(max-width:860px) 100vw, 560px', cls: 'fill' }));
+    v.classList.add('has-photo');
   });
 }
 
@@ -48,8 +53,8 @@ async function financeSummary(target, { full } = {}) {
 const pages = {
   async home() {
     photoSettings();
-    $('#catGrid').innerHTML = CATS.map((c) => `<article class="card cat-card reveal"><div class="ic">${icon(CATEGORY_ICON[c])}</div>
-      <h3>${esc(t('cat.' + c))}</h3><p>${esc(t('cat.' + c + '.text'))}</p></article>`).join('');
+    $('#catGrid').innerHTML = CATS.map((c) => `<article class="card media-card cat-card reveal"><div class="card-media">${stockPhoto(c, { ratio: 1.6, sizes: '(max-width:640px) 100vw, (max-width:980px) 50vw, 380px' })}</div>
+      <div class="body"><div class="ic">${icon(CATEGORY_ICON[c])}</div><h3>${esc(t('cat.' + c))}</h3><p>${esc(t('cat.' + c + '.text'))}</p></div></article>`).join('');
     const jobs = [
       fetchActivities(3).then((rows) => {
         $('#latest').innerHTML = rows.length

@@ -136,6 +136,10 @@ export const STRINGS = {
     'c.terms.body': 'By using this website you agree to these terms.\n\n## Use of the website\nThe content of this website is provided to inform the public about the work of HUMORA FOUNDATION. You agree not to misuse the website, submit false information or attempt to access areas that are not public.\n\n## Donations\nDonations are made voluntarily. Submitting the donation form records your pledge only; a donation is confirmed once the foundation has verified that the payment was received. Please use only the payment details published on our Donate page. If you believe a payment was made in error, contact us as soon as possible.\n\n## Accuracy of information\nWe publish only verified activities, statistics and financial records. Figures may be updated as records are reviewed.\n\n## Intellectual property\nThe HUMORA FOUNDATION name, logo and website content may not be used without permission.\n\n## Limitation of liability\nWe try to keep this website accurate and available but cannot guarantee that it will always be free of errors or interruptions.\n\n## Contact\nIf you have questions about these terms, please contact us using the details on the Contact page.',
     'legal.review': 'This document should be reviewed by the foundation before publication.',
 
+    'photo.illustrative': 'Illustrative photo',
+    'photo.note': 'Photos marked “Illustrative photo” are licensed stock images (Pexels) used to illustrate our mission. They do not show HUMORA FOUNDATION’s own activities — verified activity photos are published on the Activities page.',
+    'about.gallery.eyebrow': 'Moments of hope', 'about.gallery.title': 'The people at the heart of our mission',
+    'about.gallery.text': 'Children, families, elders and volunteers — every life deserves care, dignity and a brighter tomorrow.',
     'notfound.title': 'Page not found', 'notfound.text': 'The page you are looking for does not exist.'
   },
 
@@ -273,6 +277,10 @@ export const STRINGS = {
     'c.terms.body': 'এই ওয়েবসাইট ব্যবহার করে আপনি নিচের শর্তাবলিতে সম্মত হচ্ছেন।\n\n## ওয়েবসাইটের ব্যবহার\nহিউমোরা ফাউন্ডেশনের কাজ সম্পর্কে জনসাধারণকে জানাতে এই ওয়েবসাইটের তথ্য দেওয়া হয়েছে। আপনি ওয়েবসাইটের অপব্যবহার করবেন না, ভুল তথ্য দেবেন না এবং অপ্রকাশ্য অংশে প্রবেশের চেষ্টা করবেন না।\n\n## অনুদান\nঅনুদান সম্পূর্ণ স্বেচ্ছায় দেওয়া হয়। দানের ফর্ম জমা দিলে শুধু আপনার অঙ্গীকার রেকর্ড হয়; ফাউন্ডেশন পেমেন্ট পাওয়া যাচাই করার পরই অনুদান নিশ্চিত হয়। অনুগ্রহ করে শুধু আমাদের দান পাতায় প্রকাশিত পেমেন্ট তথ্য ব্যবহার করুন। ভুলবশত পেমেন্ট হয়ে থাকলে যত দ্রুত সম্ভব আমাদের জানান।\n\n## তথ্যের যথার্থতা\nআমরা শুধু যাচাইকৃত কার্যক্রম, পরিসংখ্যান ও আর্থিক রেকর্ড প্রকাশ করি। রেকর্ড পর্যালোচনার সঙ্গে সঙ্গে সংখ্যা হালনাগাদ হতে পারে।\n\n## মেধাস্বত্ব\nঅনুমতি ছাড়া হিউমোরা ফাউন্ডেশনের নাম, লোগো ও ওয়েবসাইটের বিষয়বস্তু ব্যবহার করা যাবে না।\n\n## দায়বদ্ধতার সীমা\nআমরা ওয়েবসাইটটি নির্ভুল ও সচল রাখার চেষ্টা করি, তবে এটি সবসময় ত্রুটিমুক্ত বা নিরবচ্ছিন্ন থাকবে — এমন নিশ্চয়তা দিতে পারি না।\n\n## যোগাযোগ\nএই শর্তাবলি নিয়ে প্রশ্ন থাকলে যোগাযোগ পাতার তথ্য ব্যবহার করে আমাদের সঙ্গে যোগাযোগ করুন।',
     'legal.review': 'প্রকাশের আগে ফাউন্ডেশনের এই ডকুমেন্টটি পর্যালোচনা করা উচিত।',
 
+    'photo.illustrative': 'প্রতীকী ছবি',
+    'photo.note': '“প্রতীকী ছবি” চিহ্নিত ছবিগুলো আমাদের মিশন বোঝাতে ব্যবহৃত লাইসেন্সকৃত স্টক ছবি (Pexels)। এগুলো হিউমোরা ফাউন্ডেশনের নিজস্ব কার্যক্রমের ছবি নয় — যাচাইকৃত কার্যক্রমের ছবি কার্যক্রম পাতায় প্রকাশ করা হয়।',
+    'about.gallery.eyebrow': 'আশার মুহূর্ত', 'about.gallery.title': 'আমাদের মিশনের কেন্দ্রে যারা',
+    'about.gallery.text': 'শিশু, পরিবার, প্রবীণ ও স্বেচ্ছাসেবক — প্রতিটি জীবন যত্ন, মর্যাদা ও সুন্দর আগামীর যোগ্য।',
     'notfound.title': 'পাতাটি পাওয়া যায়নি', 'notfound.text': 'আপনি যে পাতাটি খুঁজছেন সেটি নেই।'
   }
 };

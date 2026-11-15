@@ -3,6 +3,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.4';
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, SITE_URL } from './config.js';
 import { STRINGS } from './strings.js';
 import { icon, CATEGORY_ICON } from './icons.js';
+import { PHOTOS, photoUrl, photoSrcset } from './photos.js';
 
 export const db = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, { auth: { persistSession: false } });
 
@@ -183,6 +184,7 @@ async function renderFooter() {
       <div><h4>${esc(t('footer.social'))}</h4>${social ? `<div class="socials">${social}</div>` : `<p class="muted">${esc(t('contact.not_set'))}</p>`}
         <h4 class="mt">${esc(t('footer.legal'))}</h4><ul><li><a href="${href('/privacy/')}">${esc(t('nav.privacy'))}</a></li><li><a href="${href('/terms/')}">${esc(t('nav.terms'))}</a></li></ul></div>
     </div>
+    <p class="photo-note">${icon('image')} ${esc(t('photo.note'))}</p>
     <div class="bottom"><span>© ${fmtNum(new Date().getFullYear()).replace(/[,٬]/g, '')} HUMORA FOUNDATION. ${esc(t('footer.rights'))}</span>
       <nav><a href="${href('/privacy/')}">${esc(t('nav.privacy'))}</a><a href="${href('/terms/')}">${esc(t('nav.terms'))}</a></nav></div>
   </div>`;
@@ -282,6 +284,29 @@ export function countUp(root = document) {
   });
 }
 
+/* --------------------------------------------------------------- photos */
+// Illustrative stock photo with an explicit label (never presented as our own work).
+export function stockPhoto(key, { ratio = 1.5, sizes = '100vw', eager = false, cls = '' } = {}) {
+  const p = PHOTOS[key]; if (!p) return '';
+  const w = 1080, h = Math.round(w / ratio);
+  return `<figure class="photo ${cls}"><img src="${photoUrl(p.id, w, h)}" srcset="${photoSrcset(p.id, ratio)}" sizes="${sizes}"
+    alt="${esc(L(p.en, p.bn))}" width="${w}" height="${h}" ${eager ? 'fetchpriority="high"' : 'loading="lazy"'} decoding="async">
+    <figcaption class="photo-badge" title="${esc(t('photo.note'))}">${icon('image')}<span>${esc(t('photo.illustrative'))}</span><small>· ${esc(p.credit)} / Pexels</small></figcaption></figure>`;
+}
+function applyPhotos(root = document) {
+  root.querySelectorAll('[data-photo]').forEach((el) => {
+    if (el.dataset.done) return; el.dataset.done = '1';
+    el.innerHTML = stockPhoto(el.dataset.photo, { ratio: Number(el.dataset.ratio) || 1.5, sizes: el.dataset.sizes || '100vw', eager: el.hasAttribute('data-eager') });
+  });
+}
+// If an external image ever fails, show the neutral placeholder instead of a broken icon.
+document.addEventListener('error', (e) => {
+  const img = e.target;
+  if (!(img instanceof HTMLImageElement) || img.dataset.fallback) return;
+  img.dataset.fallback = '1'; img.removeAttribute('srcset'); img.src = '/assets/img/placeholder.svg';
+  img.closest('.photo')?.querySelector('.photo-badge')?.remove();
+}, true);
+
 /* --------------------------------------------------------------- forms */
 export function validate(form, rules) {
   let ok = true;
@@ -316,7 +341,9 @@ export async function boot(pageInit) {
   applyI18n();
   renderHeader();
   renderFooter();
+  applyPhotos();
   try { if (pageInit) await pageInit(); } catch (e) { console.warn('[humora]', e?.message || e); }
   applyI18n();
+  applyPhotos();
   reveal();
 }
